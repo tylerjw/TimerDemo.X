@@ -124,9 +124,9 @@ void timer_delay_test()
     while(1)
     {
         mPORTEWrite(BIT_4);
-        timer1_delay_ms(100);
+        timer1_delay_ms(1000);
         mPORTEWrite(0);
-        timer1_delay_ms(100);
+        timer1_delay_ms(1000);
     }
 }
 
