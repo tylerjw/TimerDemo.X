@@ -42,12 +42,16 @@
 
 //	Function Prototypes
 int main(void);
-void delay(volatile unsigned int count);
-void mem_test_16();
+void inline __attribute__((always_inline)) delay(volatile unsigned int count);
 
-void inline __attribute__((always_inline)) timer_init();
-void inline __attribute__((always_inline)) timer_start20n();
-unsigned int inline __attribute__((always_inline)) timer_end20n();
+void inline __attribute__((always_inline)) timer1_init();
+void inline __attribute__((always_inline)) timer1_start20n();
+unsigned int inline __attribute__((always_inline)) timer1_end20n();
+void inline __attribute__((always_inline)) timer1_delay_ms(unsigned int ms);
+void inline __attribute__((always_inline)) timer1_delay_us(unsigned int us);
+void timer1ms_test();
+void timer_delaymeasure_test();
+void timer_delay_test();
 
 int main(void) {
     char buffer[80];
@@ -78,8 +82,14 @@ int main(void) {
     sprintf(buffer, "actual baud: %f\r\n", actual_baud);
     U1_write(buffer);
 
-    timer_init();
+    timer1_init();
 
+    timer_delay_test();
+}
+
+void timer1ms_test()
+{
+    // test LED output (e4) on osciliscope for rising edge to falling edge of 1ms
     while (1) {
         // turn on LED
         mPORTEWrite(BIT_4);
@@ -96,12 +106,40 @@ int main(void) {
     }
 }
 
-void delay(volatile unsigned int count)
+void timer_delaymeasure_test()
 {
-    while(--count);
+    unsigned int tmr_value;
+    char buffer[80];
+    while(1)
+    {
+        mPORTEWrite(BIT_4);
+        timer1_start20n();
+        delay(SYS_CLK/4);
+        tmr_value = timer1_end20n();
+        sprintf(buffer, "delay(%d)\r\ntmr_value = %d\r\n", SYS_CLK/4, tmr_value);
+        U1_write(buffer);
+        mPORTEWrite(0);
+        delay(SYS_CLK/4);
+    }
 }
 
-void inline __attribute__((always_inline)) timer_init()
+void timer_delay_test()
+{
+    while(1)
+    {
+        mPORTEWrite(BIT_4);
+        timer1_delay_us(1000);
+        mPORTEWrite(0);
+        timer1_delay_us(1000);
+    }
+}
+
+void inline __attribute__((always_inline)) delay(volatile unsigned int count)
+{
+    while(--count) __asm("nop");
+}
+
+void inline __attribute__((always_inline)) timer1_init()
 {
     // configure TIMER1
     T1CON = 0x0;        // Stop timer and clear control register
@@ -110,16 +148,39 @@ void inline __attribute__((always_inline)) timer_init()
     PR1 = 0xFFFF;       // Load period register
 }
 
-void inline __attribute__((always_inline)) timer_start20n()
+void inline __attribute__((always_inline)) timer1_start20n()
 {
     // start TIMER1
     T1CONSET = BIT_15; // start timer
 }
 
-unsigned int inline __attribute__((always_inline)) timer_end20n()
+unsigned int inline __attribute__((always_inline)) timer1_end20n()
 {
     unsigned int tmr = TMR1;
     T1CONCLR = BIT_15; // stop the tomer
     TMR1 = 0x0;
     return tmr;
+}
+
+void inline __attribute__((always_inline)) timer1_delay_ms(unsigned int ms)
+{
+    while(ms-- > 0)
+    {
+        T1CONSET = BIT_15; // start timer
+        while(TMR1 < (49980)); // tuned
+        T1CONCLR = BIT_15; // stop the tomer
+        TMR1 = 0x0;
+    }
+}
+
+// actual delay 1.02 us
+void inline __attribute__((always_inline)) timer1_delay_us(unsigned int us)
+{
+    while(us-- > 0)
+    {
+        T1CONSET = BIT_15; // start timer
+        while(TMR1 < (36)); // tuned
+        T1CONCLR = BIT_15; // stop the tomer
+        TMR1 = 0x0;
+    }
 }
