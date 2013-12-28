@@ -13,8 +13,8 @@ extern "C" {
 #endif
 
 void inline __attribute__((always_inline)) timer1_init();
-void inline __attribute__((always_inline)) timer1_start20n();
-unsigned int inline __attribute__((always_inline)) timer1_end20n();
+void inline __attribute__((always_inline)) timer1_start_us();
+float inline __attribute__((always_inline)) timer1_end_us();
 void inline __attribute__((always_inline)) timer1_delay_ms(unsigned int ms);
 void inline __attribute__((always_inline)) timer1_delay_us(unsigned int us);
 

@@ -2,49 +2,51 @@
 #include <plib.h>
 #include "timer1.h"
 
+volatile int counter = 0;
+
 void inline __attribute__((always_inline)) timer1_init()
 {
-    // configure TIMER1
-    T1CON = 0x0;        // Stop timer and clear control register
-                        // prescaler to 1:1 (50MHz) PBCLK
-    TMR1 = 0x0;         // Clear timer register
-    PR1 = 0xFFFF;       // Load period register
+    ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2); // configure interrupt
+    INTEnableSystemMultiVectoredInt();
 }
 
-void inline __attribute__((always_inline)) timer1_start20n()
+void inline __attribute__((always_inline)) timer1_start_us()
 {
-    // start TIMER1
-    T1CONSET = BIT_15; // start timer
+
+    counter = 0;
+    OpenTimer1(T1_ON | T1_SOURCE_INT | T1_PS_1_1, 50000); //milisecond counter
 }
 
-unsigned int inline __attribute__((always_inline)) timer1_end20n()
+float inline __attribute__((always_inline)) timer1_end_us()
 {
     unsigned int tmr = TMR1;
     T1CONCLR = BIT_15; // stop the tomer
-    TMR1 = 0x0;
-    return tmr;
+    TMR1 = 0x0; // reset counter
+
+    return (counter * 1000) + ((float)tmr / 50.0); // micro seconds
 }
 
-// ~100ns error
+void __ISR(4, ipl2) _Timer1Handler(void)
+{
+    mT1ClearIntFlag();
+    counter++;
+}
+
 void inline __attribute__((always_inline)) timer1_delay_ms(unsigned int ms)
 {
-    while(ms-- > 0)
-    {
-        T1CONSET = BIT_15; // start timer
-        while(TMR1 < (49980)); // tuned
-        T1CONCLR = BIT_15; // stop the tomer
-        TMR1 = 0x0;
-    }
+    counter = 0;
+    OpenTimer1(T1_ON | T1_SOURCE_INT | T1_PS_1_1, 50000); //milisecond counter
+    while(counter < ms);
+    T1CONCLR = BIT_15; // stop the tomer
+    TMR1 = 0x0;
 }
 
-// actual delay 1.02 us
+// 100 us minimum for acuracy
 void inline __attribute__((always_inline)) timer1_delay_us(unsigned int us)
 {
-    while(us-- > 0)
-    {
-        T1CONSET = BIT_15; // start timer
-        while(TMR1 < (36)); // tuned
-        T1CONCLR = BIT_15; // stop the tomer
-        TMR1 = 0x0;
-    }
+    counter = (int)(us * 0.022);
+    OpenTimer1(T1_ON | T1_SOURCE_INT | T1_PS_1_1, 50); // micro second interrupts
+    while(counter < us);
+    T1CONCLR = BIT_15; // stop the tomer
+    TMR1 = 0x0;
 }
