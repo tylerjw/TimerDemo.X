@@ -80,7 +80,7 @@ int main(void) {
 
     timer1_init();
 
-    timer_delaymeasure_test();
+    timer_delay_test();
 }
 
 void timer1ms_test()
@@ -112,7 +112,7 @@ void timer_delaymeasure_test()
         timer1_start_us();
         delay(SYS_CLK/4);
         tmr_value = timer1_end_us()/1000000.0;
-        sprintf(buffer, "delay(%d)\r\ntmr_value = %f\r\n", SYS_CLK/4, tmr_value);
+        sprintf(buffer, "delay(%d)\r\ntmr_value = %f s\r\n", SYS_CLK/4, tmr_value);
         U1_write(buffer);
         mPORTEWrite(0);
         delay(SYS_CLK/4);
@@ -124,9 +124,9 @@ void timer_delay_test()
     while(1)
     {
         mPORTEWrite(BIT_4);
-        timer1_delay_ms(100);
+        timer1_delay_ms(1000);
         mPORTEWrite(0);
-        timer1_delay_ms(50);
+        timer1_delay_ms(500);
     }
 }
 
